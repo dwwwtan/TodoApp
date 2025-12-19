@@ -11,13 +11,7 @@ return [
     // ========================================
     // PATHS - Routes nào được áp dụng CORS
     // ========================================
-    'paths' => [
-        'api/*',    // Cho phép mọi route /api/
-        'sanctum/csrf-cookie',  // Cho phép route lấy cookie
-        'login',
-        'register',
-        'logout',
-    ],
+    'paths' => ['api/*', 'sanctum/csrf-cookie',],
 
     // ========================================
     // ALLOWED METHODS - HTTP methods được phép
@@ -29,9 +23,10 @@ return [
     // ========================================
     // ALLOWED ORIGINS - Origins nào được phép gọi API
     // ========================================
-    'allowed_origins' => ['http://localhost:5173'],
-    // env('FRONTEND_URL', 'http://localhost:5173'), // Cách "pro" là dùng file .env
-
+    'allowed_origins' => [
+        env('FRONTEND_URL', 'http://localhost:5173'),
+    ],
+    
     // ========================================
     // ALLOWED ORIGINS PATTERNS - Regex patterns
     // ========================================

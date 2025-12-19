@@ -16,7 +16,7 @@ const API_TIMEOUT = 10000;
 // CREATE AXIOS INSTANCE
 // ========================================
 const axiosInstance = axios.create({
-    baseURL: API_BASE_URL,
+    baseURL: `${API_BASE_URL}/api`, // Tất cả request sẽ có tiền tố /api
     timeout: API_TIMEOUT,
     headers: {
         'Content-Type': 'application/json',
@@ -30,7 +30,8 @@ const axiosInstance = axios.create({
 // ========================================
 // Laravel set XSRF-TOKEN cookie
 export const getCsrfToken = async () => {
-    await axiosInstance.get('/sanctum/csrf-cookie');
+    // Gọi thẳng vào root domain, override baseURL của instance
+    await axiosInstance.get('/sanctum/csrf-cookie', { baseURL: API_BASE_URL });
 };
 
 // ========================================

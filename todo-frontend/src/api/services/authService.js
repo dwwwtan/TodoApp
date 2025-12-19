@@ -3,27 +3,26 @@ import api, { getCsrfToken } from '../axios';
 export const authService = {
     register: async (userData) => {
         await getCsrfToken();
-        const response = await api.post('/api/register', userData);
+        const response = await api.post('/register', userData);
         return response.data;
     },
 
     login: async (email, password) => {
         await getCsrfToken();
-        const response = await api.post('/api/login', { email, password });
+        const response = await api.post('/login', { email, password });
         return response.data;
     },
 
     logout: async () => {
         try {
-            await api.post('/api/logout');
+            await api.post('/logout');
         } catch (error) {
             console.error('Logout error:', error);
         }
-        // Cookie tự động xóa bởi server
     },
 
     getCurrentUser: async () => {
-        const response = await api.get('/api/me');
+        const response = await api.get('/me');
         return response.data.user;
     },
 
@@ -32,7 +31,7 @@ export const authService = {
         // KHÔNG THỂ check localStorage nữa!
         // Phải gọi API để verify
         try {
-            await api.get('/api/me');
+            await api.get('/me');
             return true;
         } catch {
             return false;
