@@ -3,6 +3,9 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Auth\LoginRequest;
+use App\Http\Requests\Auth\RegisterRequest;
+use App\Http\Resources\UserResource;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -15,15 +18,9 @@ class AuthController extends Controller
     // ========================================
     // REGISTER
     // ========================================
-    public function register(Request $request): JsonResponse
+    public function register(RegisterRequest $request): JsonResponse
     {
-        // Validate input
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users',
-            'password' => 'required|string|min:8|confirmed',
-            // password_confirmation phải có trong request
-        ]);
+        $validated = $request->validated();
 
         $user = User::create([
             'name' => $validated['name'],
@@ -34,7 +31,7 @@ class AuthController extends Controller
         Auth::login($user); // Login user (tạo session)
 
         return response()->json([
-            'user' => $user,
+            'user' => new UserResource($user),
             'message' => 'Registration successful'
         ], 201); // Session được lưu trong cookie tự động
     }
@@ -42,14 +39,10 @@ class AuthController extends Controller
     // ========================================
     // LOGIN
     // ========================================
-    public function login(Request $request): JsonResponse
+    public function login(LoginRequest $request): JsonResponse
     {
-        $credentials = $request->validate([
-            'email' => ['required', 'email'],
-            'password' => ['required'],
-        ]);
+        $credentials = $request->validated();
 
-        // Attempt login
         if (!Auth::attempt($credentials)) {
             throw ValidationException::withMessages([
                 'email' => __('auth.failed'),
@@ -60,8 +53,7 @@ class AuthController extends Controller
         $request->session()->regenerate();
 
         return response()->json([
-            'user' => Auth::user(),
-            // 'user' => $request->user(),
+            'user' => new UserResource(Auth::user()),
             'message' => 'Login successful'
         ]);
     }
@@ -72,8 +64,7 @@ class AuthController extends Controller
     // ========================================
     public function logout(Request $request): JsonResponse
     {
-        Auth::guard('web')->logout(); // Logout khỏi Session
-        // Auth::logout();
+        Auth::guard('web')->logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
@@ -86,7 +77,7 @@ class AuthController extends Controller
     public function me(Request $request): JsonResponse
     {
         return response()->json([
-            'user' => $request->user()
+            'user' => new UserResource($request->user())
         ]);
     }
 }
