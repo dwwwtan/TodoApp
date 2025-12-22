@@ -22,8 +22,8 @@ export function useTodos() {
         error.value = null; // reset error
 
         try {
-            // Goi Service Layer
-            todos.value = await todoService.getAll();
+            const response = await todoService.getAll();
+            todos.value = response.data;
         } catch (err) {
             error.value = err.message || 'Failed to fetch todos'; // Lưu lỗi để Component hiển thị
             console.error('Error fetching todos:', err);
@@ -43,13 +43,13 @@ export function useTodos() {
 
         try {
             // Goi API
-            const newTodo = await todoService.create({
+            const response = await todoService.create({
                 text: text.trim(),
                 completed: false
             });
 
             // Cập nhật State ngay lập tức để giao diện hiển thị
-            todos.value.unshift(newTodo);  // Thêm vào đầu mảng
+            todos.value.unshift(response.data);  // Thêm vào đầu mảng
         } catch (err) {
             alert('Lỗi thêm todo: ' + (err.message || 'Unknown error'));
             console.error('Error adding todo:', err);
@@ -75,12 +75,12 @@ export function useTodos() {
     // ========================================
     const toggleTodo = async (id) => {
         try {
-            const updatedTodo = await todoService.toggle(id);
+            const response = await todoService.toggle(id);
 
             // Update local state
             const todo = todos.value.find(t => t.id === id);
             if (todo) {
-                todo.completed = updatedTodo.completed;
+                todo.completed = response.data.completed;
             }
         } catch (err) {
             alert('Lỗi toggle todo: ' + (err.message || 'Unknown error'));
@@ -98,14 +98,14 @@ export function useTodos() {
         }
 
         try {
-            const updatedTodo = await todoService.update(id, {
+            const response = await todoService.update(id, {
                 text: newText.trim()
             });
 
             // Update local state
             const todo = todos.value.find(t => t.id === id);
             if (todo) {
-                todo.text = updatedTodo.text;
+                todo.text = response.data.text;
             }
         } catch (err) {
             alert('Lỗi sửa todo: ' + (err.message || 'Unknown error'));
