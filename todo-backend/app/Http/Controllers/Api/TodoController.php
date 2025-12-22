@@ -3,94 +3,77 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Todo\StoreTodoRequest;
+use App\Http\Requests\Todo\UpdateTodoRequest;
+use App\Http\Resources\TodoResource;
 use App\Models\Todo;
+use App\Services\TodoService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Js;
 
 class TodoController extends Controller
 {
-    // ========================================
-    // INDEX - Chỉ lấy todos của user hiện tại
-    // ========================================
-    public function index(Request $request): JsonResponse
-    {
-        $todos = $request->user()
-            ->todos()
-            ->orderBy('created_at', 'desc')
-            ->get();
+    /**
+     * Inject TodoService
+     */
+    public function __construct(
+        protected TodoService $todoService
+    ) {}
 
-        return response()->json($todos);
+    // ========================================
+    // INDEX - Get all todos for current user
+    // ========================================
+    public function index(Request $request): AnonymousResourceCollection
+    {
+        $todos = $this->todoService->getUserTodos($request->user());
+        return TodoResource::collection($todos);
     }
 
     // ========================================
-    // STORE - Tạo todo cho user hiện tại
+    // STORE - Create new todo
     // ========================================
-    public function store(Request $request): JsonResponse
+    public function store(StoreTodoRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'text' => 'required|string|max:255',
-            'completed' => 'boolean'
-        ]);
-
-        $todo = $request->user()->todos()->create([
-            'text' => $validated['text'],
-            'completed' => $validated['completed'] ?? false
-        ]);
-
-        return response()->json($todo, 201);
+        $data = $request->validated();
+        $todo = $this->todoService->createTodo($request->user(), $data);
+        // return response()->json(new TodoResource($todo), 201);
+        return new TodoResource($todo)
+            ->response()
+            ->setStatusCode(201);
     }
 
     // ========================================
-    // SHOW - Chỉ show todo của user
+    // SHOW - Get single todo details
     // ========================================
-    public function show(Request $request, Todo $todo): JsonResponse
+    public function show(Todo $todo): JsonResource
     {
-        // Check todo thuộc về user hiện tại
-        if ($todo->user_id !== $request->user()->id) {
-            return response()->json([
-                'message' => 'Forbidden'
-            ], 403);
-        }
-
-        return response()->json($todo);
+        $this->authorize('view', $todo);
+        $todo->loadMissing('user');
+        // return response()->json(new TodoResource($todo));
+        return new TodoResource($todo);
     }
 
     // ========================================
     // UPDATE - Chỉ update todo của user
     // ========================================
-    public function update(Request $request, Todo $todo): JsonResponse
+    public function update(UpdateTodoRequest $request, Todo $todo): JsonResource
     {
-        // Check ownership
-        if ($todo->user_id !== $request->user()->id) {
-            return response()->json([
-                'message' => 'Forbidden'
-            ], 403);
-        }
-
-        $validated = $request->validate([
-            'text' => 'sometimes|string|max:255',
-            'completed' => 'sometimes|boolean'
-        ]);
-
-        $todo->update($validated);
-
-        return response()->json($todo);
+        $data = $request->validated();
+        $updatedTodo = $this->todoService->updateTodo($todo, $data);
+        // return response()->json(new TodoResource($updatedTodo), 201);
+        return new TodoResource($updatedTodo);
     }
 
     // ========================================
-    // DESTROY - Chỉ xóa todo của user
+    // DESTROY - Delete todo
     // ========================================
-    public function destroy(Request $request, Todo $todo): JsonResponse
+    public function destroy(Todo $todo): JsonResponse
     {
-        // Check ownership
-        if ($todo->user_id !== $request->user()->id) {
-            return response()->json([
-                'message' => 'Forbidden'
-            ], 403);
-        }
-
-        $todo->delete();
-
+        $this->authorize('delete', $todo);
+        $this->todoService->deleteTodo($todo);
         return response()->json([
             'message' => 'Todo deleted successfully'
         ]);
@@ -99,19 +82,11 @@ class TodoController extends Controller
     // ========================================
     // TOGGLE
     // ========================================
-    public function toggle(Request $request, Todo $todo): JsonResponse
+    public function toggle(Todo $todo): JsonResource
     {
-        // Check ownership
-        if ($todo->user_id !== $request->user()->id) {
-            return response()->json([
-                'message' => 'Forbidden'
-            ], 403);
-        }
-
-        $todo->update([
-            'completed' => !$todo->completed
-        ]);
-
-        return response()->json($todo);
+        $this->authorize('toggle', $todo);
+        $updatedTodo = $this->todoService->toggleTodo($todo);
+        // return response()->json(new TodoResource($updatedTodo));
+        return new TodoResource($updatedTodo);
     }
 }
